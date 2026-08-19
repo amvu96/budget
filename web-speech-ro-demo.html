@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Notă vocală</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f4f6;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+  }
+  header {
+    padding: 14px 0 10px 0;
+  }
+  header h1 {
+    font-size: 18px;
+    margin: 0 0 4px 0;
+    color: #1a1a1a;
+  }
+  header p {
+    font-size: 13px;
+    color: #777;
+    margin: 0;
+    line-height: 1.4;
+  }
+  #status {
+    font-size: 12.5px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: none;
+  }
+  #status.show { display: block; }
+  #status.listening { background: #eaf7ea; color: #1c7a1c; }
+  #status.error { background: #fbeaea; color: #a11; }
+  #status.idle { background: #eee; color: #666; }
+
+  textarea {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 17px;
+    line-height: 1.5;
+    background: #fff;
+    color: #111;
+    outline: none;
+  }
+  textarea:focus {
+    border-color: #6b6bf0;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    padding-bottom: 8px;
+  }
+  button {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #micBtn {
+    background: #6b6bf0;
+    color: #fff;
+    transition: background 0.15s;
+  }
+  #micBtn.recording {
+    background: #e04b4b;
+  }
+  #clearBtn {
+    background: #e7e7ea;
+    color: #333;
+    flex: 0 0 90px;
+  }
+  .unsupported {
+    background: #fff3cd;
+    color: #7a5c00;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Notă vocală (Web Speech API)</h1>
+      <p>Apasă microfonul și vorbește în română. Textul apare live pe măsură ce vorbești.</p>
+    </header>
+
+    <div id="status" class="idle"></div>
+
+    <textarea id="note" placeholder="Textul dictat va apărea aici…"></textarea>
+
+    <div class="controls">
+      <button id="micBtn">🎤 Începe dictarea</button>
+      <button id="clearBtn">Șterge</button>
+    </div>
+
+    <div id="unsupportedMsg" class="unsupported" style="display:none;">
+      Recunoașterea vocală nu este disponibilă în acest browser. Funcționează cel mai bine pe <b>Chrome pentru Android</b>. Safari/iOS nu este suportat.
+    </div>
+  </div>
+
+<script>
+(function () {
+  const noteEl = document.getElementById('note');
+  const micBtn = document.getElementById('micBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const statusEl = document.getElementById('status');
+  const unsupportedMsg = document.getElementById('unsupportedMsg');
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    micBtn.disabled = true;
+    micBtn.style.opacity = 0.5;
+    unsupportedMsg.style.display = 'block';
+    setStatus('idle', 'Nesuportat în acest browser');
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'ro-RO';        // Romanian
+  recognition.continuous = true;      // keep listening until stopped
+  recognition.interimResults = true;  // show live partial results
+
+  let listening = false;
+  let finalText = '';   // accumulated confirmed text
+  let baseText = '';    // text already in the box before this session started
+
+  function setStatus(kind, msg) {
+    statusEl.className = 'show ' + kind;
+    statusEl.textContent = msg;
+  }
+
+  micBtn.addEventListener('click', function () {
+    if (!listening) {
+      baseText = noteEl.value ? noteEl.value + ' ' : '';
+      finalText = '';
+      try {
+        recognition.start();
+      } catch (e) {
+        // start() throws if already started; ignore
+      }
+    } else {
+      recognition.stop();
+    }
+  });
+
+  clearBtn.addEventListener('click', function () {
+    noteEl.value = '';
+    noteEl.focus();
+  });
+
+  recognition.onstart = function () {
+    listening = true;
+    micBtn.textContent = '⏹ Oprește dictarea';
+    micBtn.classList.add('recording');
+    setStatus('listening', 'Ascult… vorbește acum');
+  };
+
+  recognition.onresult = function (event) {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalText += transcript + ' ';
+      } else {
+        interim += transcript;
+      }
+    }
+    noteEl.value = baseText + finalText + interim;
+    noteEl.scrollTop = noteEl.scrollHeight;
+  };
+
+  recognition.onerror = function (event) {
+    setStatus('error', 'Eroare: ' + event.error);
+  };
+
+  recognition.onend = function () {
+    listening = false;
+    micBtn.textContent = '🎤 Începe dictarea';
+    micBtn.classList.remove('recording');
+    setStatus('idle', 'Oprit');
+    // lock in whatever was transcribed as the new base
+    baseText = noteEl.value;
+  };
+})();
+</script>
+</body>
+</html>
