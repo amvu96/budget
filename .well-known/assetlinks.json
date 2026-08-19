@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "eu.nullvault.budget.twa",
+        "sha256_cert_fingerprints": ["66:0F:5E:41:88:1A:1F:BC:86:00:3B:7A:A2:3E:4B:C9:F8:44:BB:BB:02:AA:F5:DF:D1:E5:05:95:28:D0:44:24"]
+      }
+    }]
