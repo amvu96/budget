@@ -77,6 +77,14 @@ button{font-family:inherit;cursor:pointer;}
 .brand-name{font-weight:700;font-size:15px;letter-spacing:-0.01em;}
 .brand-sub{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:0.06em;margin-top:1px;}
 .topbar-actions{display:flex;gap:8px;align-items:center;}
+.topbar-actions-group{
+  display:flex;gap:8px;align-items:center;
+  padding-left:10px;margin-left:2px;
+  border-left:1px solid var(--line-soft);
+}
+.topbar-actions .btn-ghost{color:var(--ink-dim);}
+.topbar-actions .btn-ghost:hover{background:var(--panel);color:var(--ink);}
+.topbar-spacer{display:none;}
 .mobile-menu-backdrop{display:none;}
 
 /* Mobile hamburger button (hidden on desktop) */
@@ -104,6 +112,7 @@ button{font-family:inherit;cursor:pointer;}
   border:1px solid var(--line);padding:5px 10px;border-radius:20px;
   display:flex;align-items:center;gap:6px;
 }
+.pill-mobile{ display:none; }
 .dot{width:6px;height:6px;border-radius:50%;background:var(--credit);box-shadow:0 0 6px var(--credit);}
 .btn{
   font-family:var(--sans);font-size:13px;font-weight:600;
@@ -587,12 +596,25 @@ footer.app-footer{
 /* === Mobile improvements === */
 @media (max-width: 640px) {
   .topbar {
+    position: fixed;
+    left: 0; right: 0; top: 0;
     padding: 12px 14px;
     gap: 8px;
+  }
+  .topbar-spacer{
+    display:block;
+    height: calc(52px + env(safe-area-inset-top, 0px));
   }
   .topbar-row { flex-wrap: nowrap; gap: 8px; }
   .brand-name { font-size: 14px; }
   .brand-sub { font-size: 9px; }
+  .brand { min-width: 0; overflow: hidden; }
+
+  .pill-mobile{
+    display:flex; margin-left:auto; flex-shrink:0;
+    font-size: 10px; padding: 4px 9px;
+  }
+  .pill-mobile .dot{width:5px;height:5px;}
 
   .mobile-menu-btn{ display:inline-flex; }
 
@@ -629,15 +651,18 @@ footer.app-footer{
     text-transform:uppercase;letter-spacing:0.08em;
     padding:0 2px 12px;margin-bottom:4px;border-bottom:1px solid var(--line-soft);
   }
-  .topbar-actions .pill {
-    font-size: 11px; padding: 8px 10px; justify-content:center;
-    border-radius:9px; margin-bottom:6px; order:-1;
-  }
+  .topbar-actions .pill-desktop { display:none; }
   .topbar-actions .btn{
     width:100%;text-align:left;padding:12px 14px;font-size:14px;border-radius:9px;
   }
   .topbar-actions .btn-ghost{border:1px solid transparent;}
   .topbar-actions #addMoreBtn{order:0;}
+  .topbar-actions-group{
+    flex-direction:column;align-items:stretch;gap:6px;
+    padding-left:0;margin-left:0;
+    padding-top:10px;margin-top:4px;
+    border-left:none;border-top:1px solid var(--line-soft);
+  }
 
   .btn-sm { font-size: 11px; padding: 4px 10px; }
   .form-row { grid-template-columns:1fr; }
@@ -784,22 +809,28 @@ footer.app-footer{
         <div class="brand-sub" id="topbarSub">STATEMENT VAULT</div>
       </div>
     </div>
+    <div class="pill pill-mobile" id="txCountPillMobileWrap"><span class="dot"></span><span id="txCountPillMobile">0 transactions</span></div>
     <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open menu" aria-expanded="false">
       <span class="hamburger"><span></span><span></span><span></span></span>
     </button>
   </div>
 </div>
+<div class="topbar-spacer"></div>
 <div class="topbar-actions" id="topActions">
-  <div class="pill"><span class="dot"></span><span id="txCountPill">0 transactions</span></div>
+  <div class="pill pill-desktop"><span class="dot"></span><span id="txCountPill">0 transactions</span></div>
   <button class="btn btn-sm" id="installAppBtn" style="display:none;">⤓ Install app</button>
   <button class="btn btn-sm" id="addMoreBtn">+ Add statement</button>
+  <div class="topbar-actions-group">
   <button class="btn btn-sm btn-ghost" id="addWalletBtn">+ Wallet</button>
   <button class="btn btn-sm btn-ghost" id="addCategoryBtn">+ Category</button>
   <button class="btn btn-sm btn-ghost" id="addManualTxBtn">+ Transaction</button>
+  </div>
+  <div class="topbar-actions-group">
   <button class="btn btn-sm btn-ghost" id="backupBtn">Backup</button>
   <button class="btn btn-sm btn-ghost" id="restoreBtn">Restore</button>
   <button class="btn btn-sm btn-ghost" id="biometricToggleBtn">🔒 Enable biometric lock</button>
   <button class="btn btn-sm btn-ghost" id="resetBtn">Reset</button>
+  </div>
 </div>
 <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
 
@@ -2394,6 +2425,7 @@ function launchApp(){
     : ('MANUAL · ' + STATE.wallets.length + ' WALLET' + (STATE.wallets.length===1?'':'S'));
   document.getElementById('topbarSub').textContent = statusLabel;
   document.getElementById('txCountPill').textContent = STATE.transactions.length + ' transactions';
+  document.getElementById('txCountPillMobile').textContent = STATE.transactions.length + ' transactions';
 
   populateFilterOptions();
   renderAll();
