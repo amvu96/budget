@@ -1,7 +1,7 @@
 // Ledger — service worker
 // Caches the app shell so it works offline / inside the TWA without a network hop.
 
-const CACHE_NAME = 'ledger-vault-v5';
+const CACHE_NAME = 'ledger-vault-v6';
 const APP_SHELL = [
   './',
   './index.html',
